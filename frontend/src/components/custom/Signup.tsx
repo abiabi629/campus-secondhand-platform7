@@ -43,14 +43,12 @@ const Signup = () => {
         body: JSON.stringify({ name, email, password, confirmPassword }),
       });
       const data = await response.json();
-      if (data.success && data.data?.token && data.data?.user) {
-        login(data.data.token, data.data.user);
-        // 存储用户角色到 localStorage，用于页面跳转
-        localStorage.setItem('userRole', data.data.user.role);
+      if (data.success && data.data?.token) {
+        login(data.data.token);
         toast.success('注册成功', { description: `欢迎加入校园好物，${name}！` });
         navigate('/', { replace: true });
       } else {
-        setError(data.error?.message || '注册失败，请稍后重试');
+        setError(data.message || '注册失败，请稍后重试');
       }
     } catch {
       setError('网络错误，请稍后重试');

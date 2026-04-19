@@ -5,7 +5,6 @@ import {
   useEffect,
   ReactNode,
 } from 'react';
-import { API_BASE_URL } from '../config/constants';
 
 interface User {
   id: string;
@@ -50,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        const response = await fetch('/api/auth/me', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

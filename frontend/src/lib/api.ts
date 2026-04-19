@@ -21,27 +21,14 @@ const getAuthHeaders = () => {
 };
 
 const apiFetch = async <T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> => {
-  const token = localStorage.getItem('token');
-  console.log('Token in localStorage:', token ? 'Exists' : 'Missing');
-  const headers = {
-    ...getAuthHeaders(),
-    ...(options?.headers || {}),
-  };
-  const fullUrl = `${API_BASE_URL}${url}`;
-  console.log('API Request:', fullUrl, { headers: { ...headers, Authorization: headers.Authorization ? 'Bearer ***' : 'Missing' } });
-  try {
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    });
-    console.log('API Response Status:', response.status);
-    const data = await response.json();
-    console.log('API Response Data:', data);
-    return data as ApiResponse<T>;
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...(options?.headers || {}),
+    },
+  });
+  return response.json() as Promise<ApiResponse<T>>;
 };
 
 // Products

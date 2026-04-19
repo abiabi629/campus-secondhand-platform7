@@ -102,6 +102,32 @@ export default function HomePage({ onNavigate, onPublish }: HomePageProps) {
     }
   }, [activeCategory, searchQuery, sortBy, page]);
 
+  // 处理返回全部商品
+  const handleReturnAll = () => {
+    // 直接清空搜索框并重新加载商品，不依赖状态更新
+    setSearchQuery('');
+    setActiveCategory('all');
+    // 直接调用apiGetProducts获取所有商品
+    setLoading(true);
+    apiGetProducts({
+      category: undefined,
+      search: undefined,
+      sortBy,
+      limit: 20,
+      offset: 0,
+    }).then(res => {
+      if (res.success) {
+        setProducts(res.data);
+        setPage(0);
+        setHasMore(res.data.length === 20);
+      }
+    }).catch(() => {
+      toast.error('加载商品失败');
+    }).finally(() => {
+      setLoading(false);
+    });
+  };
+
   useEffect(() => {
     loadProducts(true);
   }, [activeCategory, sortBy]);
@@ -120,6 +146,7 @@ export default function HomePage({ onNavigate, onPublish }: HomePageProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // 搜索后保持搜索框内容，确保"返回全部"按钮显示
     loadProducts(true);
   };
 
@@ -337,54 +364,34 @@ export default function HomePage({ onNavigate, onPublish }: HomePageProps) {
             <p className="text-sm text-muted-foreground mt-1">共 {products.length} 件在售商品</p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <form onSubmit={handleSearch} className="flex-1 sm:flex-none relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="搜索商品..."
-                className="w-full sm:w-56 pl-9 pr-4 py-2 rounded-full border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
-              />
-            </form>
-            {(searchQuery || activeCategory !== 'all') && (
-              <button
-                onClick={() => {
-                  // 先更新状态
-                  setSearchQuery('');
-                  setActiveCategory('all');
-                  setSortBy('latest');
-                  // 立即重新加载商品，使用新的参数
-                  const resetLoadProducts = async () => {
-                    setLoading(true);
-                    try {
-                      const res = await apiGetProducts({
-                        category: undefined,
-                        search: undefined,
-                        sortBy: 'latest',
-                        limit: 20,
-                        offset: 0,
-                      });
-                      if (res.success) {
-                        setProducts(res.data);
-                        setPage(0);
-                        setHasMore(res.data.length === 20);
-                      }
-                    } catch {
-                      toast.error('加载商品失败');
-                    } finally {
-                      setLoading(false);
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      loadProducts(true);
                     }
-                  };
-                  resetLoadProducts();
-                }}
-                className="px-4 py-2 rounded-full border border-border bg-white text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary transition-colors"
-              >
-                返回所有商品
-              </button>
-            )}
+                  }}
+                  placeholder="搜索商品..."
+                  className="w-full sm:w-56 pl-9 pr-4 py-2 rounded-full border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                />
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={handleReturnAll}
+                  className="px-3 py-2 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                >
+                  返回全部
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-1">
               {['latest', 'price-asc', 'price-desc'].map((s, i) => (
                 <button

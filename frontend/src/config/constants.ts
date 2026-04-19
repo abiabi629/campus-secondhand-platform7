@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3010';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const UI_CONFIG = {
   MOBILE_BREAKPOINT: 768,

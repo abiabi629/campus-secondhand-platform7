@@ -9,6 +9,7 @@ import { AppError } from '../middleware/errorHandler';
 import { db } from '../db';
 import { users } from '../db/schema';
 import { sql } from 'drizzle-orm';
+import Database from 'better-sqlite3';
 
 const router = Router();
 const productRepo = new ProductRepository();
@@ -102,12 +103,25 @@ router.put('/reports/:id', authenticateJWT, requireAdmin, async (req: Request, r
   }
 });
 
-// GET /api/admin/users - get all users
+// GET /api/admin/users - get all users except banned ones
 router.get('/users', authenticateJWT, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const allUsers = await userRepo.findAll();
-    res.json({ success: true, data: allUsers });
+    console.log('Getting users...');
+    // Use better-sqlite3 directly to avoid Drizzle ORM issues
+    const Database = require('better-sqlite3');
+    const sqlite = new Database('campus_marketplace.db');
+    
+    // Get only active users
+    const stmt = sqlite.prepare('SELECT * FROM Users WHERE is_banned = 0');
+    const activeUsers = stmt.all();
+    console.log('Active users:', activeUsers);
+    
+    // Close the database connection
+    sqlite.close();
+    
+    res.json({ success: true, data: activeUsers });
   } catch (error) {
+    console.error('Get users error:', error);
     next(error);
   }
 });
@@ -116,9 +130,33 @@ router.get('/users', authenticateJWT, requireAdmin, async (req: Request, res: Re
 router.put('/users/:id/ban', authenticateJWT, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { isBanned } = req.body;
-    const user = await userRepo.update(req.params.id as string, { isBanned });
-    res.json({ success: true, data: user });
+    console.log('Ban user request:', { isBanned, type: typeof isBanned });
+    // Convert boolean to number for SQLite
+    const isBannedNum = isBanned ? 1 : 0;
+    console.log('Converted isBanned to number:', { value: isBannedNum, type: typeof isBannedNum });
+    const userId = req.params.id;
+    const now = Date.now();
+    
+    // Use better-sqlite3 directly to avoid Drizzle ORM issues
+    const sqlite = new Database('campus_marketplace.db');
+    
+    // Prepare and run the update statement
+    const stmt = sqlite.prepare(`
+      UPDATE Users
+      SET is_banned = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    
+    const result = stmt.run(isBannedNum, now, userId);
+    console.log('Update result:', result);
+    
+    // Close the database connection
+    sqlite.close();
+    
+    // Return success
+    res.json({ success: true, data: { id: userId, isBanned: isBannedNum } });
   } catch (error) {
+    console.error('Ban user error:', error);
     next(error);
   }
 });

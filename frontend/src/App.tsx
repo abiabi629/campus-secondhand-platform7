@@ -41,7 +41,7 @@ const AppRoutes = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  const handleNavigate = (view: string, productId?: string) => {
+  const handleNavigate = (view: string, productId?: string, sellerId?: string, sellerName?: string) => {
     switch (view) {
       case 'product-detail':
         if (productId) {
@@ -60,7 +60,14 @@ const AppRoutes = () => {
         navigate('/profile');
         break;
       case 'messages':
-        navigate('/messages');
+        if (sellerId && productId && sellerName) {
+          navigate(`/messages?userId=${sellerId}&productId=${productId}&sellerName=${encodeURIComponent(sellerName)}`);
+        } else {
+          navigate('/messages');
+        }
+        break;
+      case 'home':
+        navigate('/');
         break;
       default:
         break;
@@ -132,13 +139,7 @@ const App = () => (
   <HashRouter>
     <AuthProvider>
       <AppRoutes />
-      <Toaster 
-        position="top-center" 
-        offset={80} // 偏移量，确保显示在菜单栏下方
-        toastOptions={{ 
-          zIndex: 40
-        }} 
-      />
+      <Toaster position="top-right" />
     </AuthProvider>
   </HashRouter>
 );

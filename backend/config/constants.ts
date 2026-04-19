@@ -6,7 +6,7 @@ export const SERVER_CONFIG = {
 export const JWT_CONFIG = {
   SECRET: process.env.JWT_SECRET,
   FALLBACK_SECRET: 'campus-marketplace-secret-key-2026',
-  EXPIRES_IN: '7d',
+  EXPIRES_IN: '365d',
 } as const;
 
 export const AUTH_ERRORS = {

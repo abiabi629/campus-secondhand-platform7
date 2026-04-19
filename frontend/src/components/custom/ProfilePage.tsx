@@ -35,15 +35,15 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [products, setProducts] = useState<ProductWithSeller[]>([]);
+  const [favoriteProducts, setFavoriteProducts] = useState<ProductWithSeller[]>([]);
   const [activeTab, setActiveTab] = useState<'products' | 'favorites' | 'settings'>('products');
   const [loading, setLoading] = useState(true);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editStudentId, setEditStudentId] = useState('');
   const [saving, setSaving] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
-  const [favorites, setFavorites] = useState<ProductWithSeller[]>([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -65,6 +65,30 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
       if (res.success) setProducts(res.data);
       setLoading(false);
     });
+  }, []);
+
+  useEffect(() => {
+    const fetchFavoriteProducts = async () => {
+      try {
+        setFavoritesLoading(true);
+        const favoriteIdsRes = await apiGetFavorites();
+        if (favoriteIdsRes.success) {
+          const favoriteIds = favoriteIdsRes.data;
+          const favoriteProductsData = await Promise.all(
+            favoriteIds.map(async (id) => {
+              const productRes = await apiGetProduct(id);
+              return productRes.success ? productRes.data : null;
+            })
+          );
+          setFavoriteProducts(favoriteProductsData.filter(Boolean) as ProductWithSeller[]);
+        }
+      } catch (error) {
+        console.error('获取收藏商品失败:', error);
+      } finally {
+        setFavoritesLoading(false);
+      }
+    };
+    fetchFavoriteProducts();
   }, []);
 
   const handleSaveProfile = async () => {
@@ -115,50 +139,11 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
     }
   };
 
-  const fetchFavorites = async () => {
-    setFavoritesLoading(true);
-    try {
-      console.log('Fetching favorites...');
-      const res = await apiGetFavorites();
-      console.log('Favorites response:', res);
-      if (res.success) {
-        const favoriteIds = res.data;
-        console.log('Favorite IDs:', favoriteIds);
-        if (favoriteIds.length > 0) {
-          // 获取每个收藏商品的详细信息
-          const favoriteProducts = await Promise.all(
-            favoriteIds.map(async (id) => {
-              try {
-                const productRes = await apiGetProduct(id);
-                return productRes.success ? productRes.data : null;
-              } catch (error) {
-                console.error('Error fetching product:', id, error);
-                return null;
-              }
-            })
-          );
-          console.log('Favorite products:', favoriteProducts);
-          setFavorites(favoriteProducts.filter(Boolean) as ProductWithSeller[]);
-        } else {
-          setFavorites([]);
-        }
-      } else {
-        console.error('API error:', res);
-        toast.error('获取收藏失败');
-      }
-    } catch (error) {
-      console.error('Network error:', error);
-      toast.error('获取收藏失败');
-    } finally {
-      setFavoritesLoading(false);
-    }
-  };
-
   const handleRemoveFavorite = async (productId: string) => {
     try {
       const res = await apiToggleFavorite(productId);
-      if (res.success) {
-        setFavorites(prev => prev.filter(p => p.product.id !== productId));
+      if (res.success && !res.data.favorited) {
+        setFavoriteProducts(prev => prev.filter(p => p.product.id !== productId));
         toast.success('已取消收藏');
       }
     } catch {
@@ -231,12 +216,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
         {[{ id: 'products', label: '我的商品' }, { id: 'favorites', label: '我的收藏' }, { id: 'settings', label: '个人设置' }].map(tab => (
           <button
             key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id as 'products' | 'favorites' | 'settings');
-              if (tab.id === 'favorites') {
-                fetchFavorites();
-              }
-            }}
+            onClick={() => setActiveTab(tab.id as 'products' | 'favorites' | 'settings')}
             className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
               activeTab === tab.id ? 'bg-white text-[#0D9488] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
@@ -363,11 +343,11 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                 </div>
               ))}
             </div>
-          ) : favorites.length === 0 ? (
+          ) : favoriteProducts.length === 0 ? (
             <div className="text-center py-16">
-              <div className="text-5xl mb-4">🤍</div>
-              <h3 className="text-lg font-semibold text-[#0F172A] mb-2">暂无收藏</h3>
-              <p className="text-[#64748B] text-sm mb-4">收藏你喜欢的商品，方便以后查看</p>
+              <div className="text-5xl mb-4">❤️</div>
+              <h3 className="text-lg font-semibold text-[#0F172A] mb-2">暂无收藏商品</h3>
+              <p className="text-[#64748B] text-sm mb-4">浏览商品时点击心形图标收藏</p>
               <button
                 onClick={() => onNavigate('home')}
                 className="px-6 py-3 rounded-full bg-[#0D9488] text-white font-semibold hover:bg-[#0D9488]/90 transition-colors"
@@ -377,8 +357,7 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {favorites.map(item => {
-                const statusInfo = STATUS_LABELS[item.product.status] || { label: item.product.status, color: 'bg-gray-100 text-gray-600' };
+              {favoriteProducts.map(item => {
                 let imgSrc = 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=280&fit=crop';
                 try {
                   const imgs = JSON.parse(item.product.images) as string[];
@@ -388,37 +367,33 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <div key={item.product.id} className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden hover:shadow-md transition-shadow">
                     <div className="relative">
                       <img src={imgSrc} alt={item.product.title} className="w-full h-36 object-cover" />
-                      <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold ${statusInfo.color}`}>
-                        {statusInfo.label}
-                      </span>
                       <button
                         onClick={() => handleRemoveFavorite(item.product.id)}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 flex items-center justify-center text-[#EF4444] hover:bg-white hover:text-[#DC2626] transition-colors"
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center hover:bg-white transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        <svg className="w-4 h-4 text-destructive" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                       </button>
                     </div>
                     <div className="p-3">
                       <h3 className="text-sm font-semibold text-[#0F172A] line-clamp-1">{item.product.title}</h3>
                       <div className="text-[#0D9488] font-bold text-sm mt-1">¥{item.product.price}</div>
-                      <div className="text-xs text-[#64748B] mt-1">
-                        卖家：{item.seller?.name || '未知'}
-                      </div>
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => onNavigate('product-detail', item.product.id)}
                           className="flex-1 py-1.5 rounded-lg border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F8FAFC] transition-colors"
                         >
-                          查看详情
+                          查看
                         </button>
-                        <button
-                          onClick={() => onNavigate('messages', item.product.sellerId)}
-                          className="flex-1 py-1.5 rounded-lg bg-[#3B82F6]/10 text-xs text-[#3B82F6] font-medium hover:bg-[#3B82F6]/20 transition-colors"
-                        >
-                          联系卖家
-                        </button>
+                        {item.product.status === 'approved' && (
+                          <button
+                            onClick={() => onNavigate('messages', item.seller?.id, item.product.id, item.seller?.name || '')}
+                            className="flex-1 py-1.5 rounded-lg bg-[#0D9488]/10 text-xs text-[#0D9488] font-medium hover:bg-[#0D9488]/20 transition-colors"
+                          >
+                            联系卖家
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
