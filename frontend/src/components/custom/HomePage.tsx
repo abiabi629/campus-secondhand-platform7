@@ -349,6 +349,42 @@ export default function HomePage({ onNavigate, onPublish }: HomePageProps) {
                 className="w-full sm:w-56 pl-9 pr-4 py-2 rounded-full border border-border bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
               />
             </form>
+            {(searchQuery || activeCategory !== 'all') && (
+              <button
+                onClick={() => {
+                  // 先更新状态
+                  setSearchQuery('');
+                  setActiveCategory('all');
+                  setSortBy('latest');
+                  // 立即重新加载商品，使用新的参数
+                  const resetLoadProducts = async () => {
+                    setLoading(true);
+                    try {
+                      const res = await apiGetProducts({
+                        category: undefined,
+                        search: undefined,
+                        sortBy: 'latest',
+                        limit: 20,
+                        offset: 0,
+                      });
+                      if (res.success) {
+                        setProducts(res.data);
+                        setPage(0);
+                        setHasMore(res.data.length === 20);
+                      }
+                    } catch {
+                      toast.error('加载商品失败');
+                    } finally {
+                      setLoading(false);
+                    }
+                  };
+                  resetLoadProducts();
+                }}
+                className="px-4 py-2 rounded-full border border-border bg-white text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary transition-colors"
+              >
+                返回所有商品
+              </button>
+            )}
             <div className="flex items-center gap-1">
               {['latest', 'price-asc', 'price-desc'].map((s, i) => (
                 <button
