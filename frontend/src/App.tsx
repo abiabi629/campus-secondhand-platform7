@@ -132,7 +132,13 @@ const App = () => (
   <HashRouter>
     <AuthProvider>
       <AppRoutes />
-      <Toaster position="top-center" />
+      <Toaster 
+        position="top-center" 
+        offset={80} // 偏移量，确保显示在菜单栏下方
+        toastOptions={{ 
+          zIndex: 40
+        }} 
+      />
     </AuthProvider>
   </HashRouter>
 );
