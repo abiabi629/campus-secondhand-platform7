@@ -5,13 +5,18 @@ import bcrypt from 'bcryptjs';
 
 async function seed() {
   try {
-    // Clear existing data
-    await db.delete(favorites);
-    await db.delete(announcements);
-    await db.delete(reports);
-    await db.delete(messages);
-    await db.delete(products);
-    await db.delete(users);
+    // Check if database already has users
+    const existingUsers = await db.select({ count: db.fn.count() }).from(users);
+    const userCount = Number(existingUsers[0].count);
+    
+    if (userCount > 0) {
+      console.log('Database already has users. Skipping seed data insertion.');
+      console.log(`Found ${userCount} existing users.`);
+      process.exit();
+      return;
+    }
+    
+    console.log('No existing users found. Inserting seed data...');
     
     // Create admin user
     const hashedPassword = await bcrypt.hash('admin123', 12);
