@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiGetMyProducts, apiUpdateProduct, apiDeleteProduct, apiGetFavorites, apiGetProduct, apiToggleFavorite } from '../../lib/api';
-import type { ProductWithSeller, AppView } from '../../types';
+import type { ProductWithSeller } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_BASE_URL } from '../../config/constants';
 
@@ -15,7 +15,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 interface ProfilePageProps {
-  onNavigate: (view: AppView, id?: string) => void;
+  onNavigate: (view: string, productId?: string, sellerId?: string, sellerName?: string) => void;
 }
 
 interface UserInfo {

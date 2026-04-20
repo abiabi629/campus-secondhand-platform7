@@ -43,8 +43,8 @@ const Signup = () => {
         body: JSON.stringify({ name, email, password, confirmPassword }),
       });
       const data = await response.json();
-      if (data.success && data.data?.token) {
-        login(data.data.token);
+      if (data.success && data.data?.token && data.data?.user) {
+        login(data.data.token, data.data.user);
         toast.success('注册成功', { description: `欢迎加入校园好物，${name}！` });
         navigate('/', { replace: true });
       } else {
