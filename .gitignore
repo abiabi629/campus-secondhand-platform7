@@ -34,8 +34,9 @@ ehthumbs.db
 Thumbs.db
 
 # Database files
-*.db
 *.sqlite
+# Allow the main database file
+!campus_marketplace.db
 
 # Log files
 logs
