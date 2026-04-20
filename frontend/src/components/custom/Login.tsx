@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '../../config/constants';
 
 const Login = () => {
   const { login, isAuthenticated } = useAuth();
@@ -45,7 +44,7 @@ const Login = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
