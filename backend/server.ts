@@ -7,13 +7,53 @@ import adminRoutes from './routes/admin';
 import 'dotenv/config';
 import express, { ErrorRequestHandler } from 'express';
 import path from 'path';
+import fs from 'fs';
 import passport from './config/passport';
 import cors from 'cors';
 
 import { SERVER_CONFIG } from './config/constants';
 import { errorHandler } from './middleware/errorHandler';
 
+const DB_FILE = 'campus_marketplace.db';
+const BACKUP_DIR = path.join(__dirname, '..', 'backup');
+
+function autoBackup(): void {
+  const dbPath = path.join(__dirname, '..', DB_FILE);
+
+  if (!fs.existsSync(dbPath)) {
+    console.log('Database file not found, skipping backup.');
+    return;
+  }
+
+  if (!fs.existsSync(BACKUP_DIR)) {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  }
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const backupFilename = `campus_marketplace_${timestamp}.db`;
+  const backupPath = path.join(BACKUP_DIR, backupFilename);
+
+  fs.copyFileSync(dbPath, backupPath);
+  console.log(`Auto backup created: ${backupFilename}`);
+
+  const files = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.startsWith('campus_marketplace_') && f.endsWith('.db'))
+    .sort()
+    .reverse();
+
+  if (files.length > 10) {
+    const toDelete = files.slice(10);
+    toDelete.forEach(file => {
+      fs.unlinkSync(path.join(BACKUP_DIR, file));
+    });
+    console.log(`Cleaned up ${toDelete.length} old backup(s).`);
+  }
+}
+
 const app = express();
+
+autoBackup();
 
 /**
  * Static Files

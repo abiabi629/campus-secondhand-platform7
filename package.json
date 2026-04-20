@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "typecheck:build": "tsc",
     "lint": "eslint .",
-    "db:push": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx drizzle-kit push"
+    "db:push": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx drizzle-kit push",
+    "backup": "tsx backend/scripts/backup.ts backup",
+    "backup:list": "tsx backend/scripts/backup.ts list",
+    "backup:restore": "tsx backend/scripts/backup.ts restore"
   },
   "keywords": [],
   "author": "",
